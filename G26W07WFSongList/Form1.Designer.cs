@@ -45,6 +45,7 @@
             listSong.Size = new Size(796, 324);
             listSong.TabIndex = 0;
             listSong.SelectedIndexChanged += OnChanged;
+            listSong.DoubleClick += OnYouTube;
             // 
             // txtTitle
             // 
@@ -82,7 +83,7 @@
             btnAdd.UseVisualStyleBackColor = true;
             btnAdd.Click += OnAdd;
             // 
-            // textBox1
+            // txtSelected
             // 
             txtSelected.Enabled = false;
             txtSelected.Location = new Point(31, 393);

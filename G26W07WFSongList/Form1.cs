@@ -1,9 +1,10 @@
 
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
-using Microsoft.EntityFrameworkCore;
 
 namespace G26W07WFSongList
 {
@@ -48,9 +49,9 @@ namespace G26W07WFSongList
                 _db.SaveChanges();
 
             }
-          
 
-        LoadSongs();
+
+            LoadSongs();
         }
         private void OnDelete(object sender, EventArgs e)
         {
@@ -139,6 +140,20 @@ namespace G26W07WFSongList
         {
             _db.Dispose();
             base.OnFormClosed(e);
+        }
+
+        private void OnYouTube(object sender, EventArgs e)
+        {
+            if (listSong.SelectedItem is not Song song)
+                return;
+
+            string query = Uri.EscapeDataString($"노래방 {song.Title} {song.Artist}");
+
+            Process.Start(new ProcessStartInfo(
+                $"https://www.youtube.com/results?search_query={query}")
+            {
+                UseShellExecute = true
+            });
         }
     }
 
