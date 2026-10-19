@@ -1,31 +1,15 @@
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
 using Microsoft.EntityFrameworkCore;
 
 namespace G26W07WFSongList
 {
-
-    public record Song(string Title, string Artist, int Rating)
-    {
-        public int Id { get; init; }
-
-        public override string ToString() => $"{Title} - [{Artist}] (⭐{Rating})";
-    }
-
-    public class AppDbContext : DbContext
-    {
-        public DbSet<Song> Songs { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            // songs.db 파일로 저장
-            optionsBuilder.UseSqlite("Data Source=songs.db");
-        }
-    }
-
-
     public partial class Form1 : Form
     {
-        //private List<Song> _songs = [];
-        private AppDbContext _db = new AppDbContext();
+        private readonly AppDbContext _db = new AppDbContext();
 
         public Form1()
         {
@@ -33,10 +17,11 @@ namespace G26W07WFSongList
 
             _db.Database.EnsureCreated();
 
-            // Songs 테이블이 비어있으면 초기 데이터 추가
+            // Songs 테이블이 비어 있으면 초기 데이터 추가
             if (!_db.Songs.Any())
             {
-                List<Song> initialSongs = [
+                List<Song> initialSongs =
+                [
                     new("Blue Hour", "LUNA8", 5),
                     new("도깨비불 (Ghostfire)", "X-CROSS", 4),
                     new("Spicy Love", "Cherry Bomb", 5),
@@ -61,17 +46,120 @@ namespace G26W07WFSongList
 
                 _db.Songs.AddRange(initialSongs);
                 _db.SaveChanges();
+
+            }
+          
+
+        LoadSongs();
+        }
+        private void OnDelete(object sender, EventArgs e)
+        {
+            if (listSong.SelectedItem is not Song song)
+                return;
+
+            var result = MessageBox.Show(
+                $"{song.ToString()}\n\n노래를 삭제할까요?",
+                "삭제 확인",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes)
+                return;
+
+            _db.Songs.Remove(song);
+            _db.SaveChanges();
+
+            LoadSongs();
+
+            txtSelected.Clear();
+            btnDelete.Enabled = false;
+        }
+        private void OnChanged(object sender, EventArgs e)
+        {
+            if (listSong.SelectedItem is not Song song)
+            {
+                txtSelected.Clear();
+                btnDelete.Enabled = false;
+                return;
             }
 
-            var filteredSongs = _db.Songs
-                .Where(s => s.Rating >= 4)
-                .OrderByDescending(s => s.Rating);
+            txtSelected.Text = song.ToString();
+            btnDelete.Enabled = true;
+        }
 
-            foreach (var song in filteredSongs)
+        private void OnAdd(object sender, EventArgs e)
+        {
+            string title = txtTitle.Text.Trim();
+            string artist = txtArtist.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(title) ||
+                string.IsNullOrWhiteSpace(artist))
+            {
+                MessageBox.Show("제목과 가수를 모두 입력하세요.");
+                return;
+            }
+
+            if (!int.TryParse(txtRating.Text, out int rating) ||
+                rating < 1 || rating > 5)
+            {
+                MessageBox.Show("평점은 1~5 사이의 숫자로 입력하세요.");
+                txtRating.SelectAll();
+                txtRating.Focus();
+                return;
+            }
+
+            var song = new Song(title, artist, rating);
+
+            _db.Songs.Add(song);
+            _db.SaveChanges();
+
+            LoadSongs();
+
+            txtTitle.Clear();
+            txtArtist.Clear();
+            txtRating.Clear();
+            txtTitle.Focus();
+        }
+
+        private void LoadSongs()
+        {
+            listSong.Items.Clear();
+
+            var songs = _db.Songs
+                .OrderByDescending(s => s.Rating)
+                .ToList();
+
+            foreach (var song in songs)
             {
                 listSong.Items.Add(song);
-
             }
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _db.Dispose();
+            base.OnFormClosed(e);
+        }
+    }
+
+    public record Song(string Title, string Artist, int Rating)
+    {
+        public int Id { get; init; }
+
+        public override string ToString()
+        {
+            return $"{Title} - [{Artist}] (⭐{Rating})";
+        }
+    }
+
+    public class AppDbContext : DbContext
+    {
+        public DbSet<Song> Songs { get; set; } = null!;
+
+        protected override void OnConfiguring(
+            DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite("Data Source=songs.db");
         }
     }
 }
