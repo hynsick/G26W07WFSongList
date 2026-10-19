@@ -126,14 +126,16 @@ namespace G26W07WFSongList
         {
             listSong.Items.Clear();
 
+            string keyword = txtFilter.Text.Trim();
+
             var songs = _db.Songs
+                .Where(s => s.Title.ToLower().Contains(keyword) ||
+                    s.Artist.ToLower().Contains(keyword))
                 .OrderByDescending(s => s.Rating)
                 .ToList();
 
             foreach (var song in songs)
-            {
                 listSong.Items.Add(song);
-            }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -154,6 +156,11 @@ namespace G26W07WFSongList
             {
                 UseShellExecute = true
             });
+        }
+
+        private void OnFilterChanged(object sender, EventArgs e)
+        {
+            LoadSongs();
         }
     }
 
